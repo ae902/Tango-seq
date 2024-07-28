@@ -1,0 +1,269 @@
+---
+title: "Tango-seq"
+---
+
+```{r, warning=FALSE}
+#load packages
+library(Seurat);
+library(dplyr);
+library(ggplot2);
+library(tidyverse);
+library(RColorBrewer)
+require(scales)
+```
+
+
+```{r}
+#assign path to raw feature barcode matrix for rep1
+path_r1 = ""
+
+#load data and create seurat object
+pdfgs.data.rep1 <- Read10X(data.dir = path_r1)
+Pdf_geneswitch_rep1 <- CreateSeuratObject(counts = pdfgs.data.rep1, project = "Pdf_Geneswitch_rep1", min.cells = 3, min.features = 200)
+```
+
+
+```{r}
+#plot sequencing data qualitiy info and subset data
+Pdf_geneswitch_rep1[["percent.mt"]] <- PercentageFeatureSet(Pdf_geneswitch_rep1, pattern = "mt:")
+VlnPlot(Pdf_geneswitch_rep1, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+plot1 <- FeatureScatter(Pdf_geneswitch_rep1, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(Pdf_geneswitch_rep1, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+CombinePlots(plots = list(plot1, plot2))
+Pdf_geneswitch_rep1 <- subset(Pdf_geneswitch_rep1, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 10)
+
+#cleaned data
+VlnPlot(Pdf_geneswitch_rep1, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+
+
+```{r}
+#normalize, find variable feature, and scale data
+Pdf_geneswitch_rep1 <- NormalizeData(Pdf_geneswitch_rep1)
+Pdf_geneswitch_rep1 <- FindVariableFeatures(Pdf_geneswitch_rep1, selection.method = "vst", nfeatures = 10000)
+top10 <- head(VariableFeatures(Pdf_geneswitch_rep1), 10)
+
+plot1 <- VariableFeaturePlot(Pdf_geneswitch_rep1)
+plot(plot1)
+
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot(plot2)
+
+all.genes <- rownames(Pdf_geneswitch_rep1)
+Pdf_geneswitch_rep1 <- ScaleData(Pdf_geneswitch_rep1, features = all.genes)
+```
+
+
+```{r}
+#dimensional reduction
+Pdf_geneswitch_rep1 <- RunPCA(Pdf_geneswitch_rep1, features = VariableFeatures(object = Pdf_geneswitch_rep1))
+VizDimLoadings(Pdf_geneswitch_rep1, dims = 1:2, reduction = "pca")
+DimPlot(Pdf_geneswitch_rep1, reduction = "pca")
+DimHeatmap(Pdf_geneswitch_rep1, dims = 1:6, cells = 500, balanced = TRUE)
+ElbowPlot(Pdf_geneswitch_rep1)
+```
+
+
+```{r}
+#cluster and UMAP
+Pdf_geneswitch_rep1 <- FindNeighbors(Pdf_geneswitch_rep1, dims = 1:10)
+Pdf_geneswitch_rep1 <- FindClusters(Pdf_geneswitch_rep1, resolution = 1.4)
+Pdf_geneswitch_rep1 <- RunUMAP(Pdf_geneswitch_rep1, dims = 1:10)
+DimPlot(Pdf_geneswitch_rep1, reduction = "umap", label = T)
+```
+
+
+```{r}
+#find cluster markers
+Pdf.rep1.markers <- FindAllMarkers(Pdf_geneswitch_rep1, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+Pdf.rep1.markers %>% group_by(cluster) %>% top_n(n = 20, wt = avg_logFC)
+```
+
+
+```{r}
+#assign path to raw feature barcode matrix for rep2
+path_r2 = ""
+
+#load data and create seurat object
+pdfgs.data.rep2 <- Read10X(data.dir = path_r2)
+Pdf_geneswitch_rep2 <- CreateSeuratObject(counts = pdfgs.data.rep2, project = "Pdf_Geneswitch_rep2", min.cells = 3, min.features = 200)
+```
+
+
+```{r}
+#plot sequencing data qualitiy info and subset data
+Pdf_geneswitch_rep2[["percent.mt"]] <- PercentageFeatureSet(Pdf_geneswitch_rep2, pattern = "mt:")
+VlnPlot(Pdf_geneswitch_rep2, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+plot1 <- FeatureScatter(Pdf_geneswitch_rep2, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(Pdf_geneswitch_rep2, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+CombinePlots(plots = list(plot1, plot2))
+Pdf_geneswitch_rep2 <- subset(Pdf_geneswitch_rep2, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 10)
+
+#cleaned data
+VlnPlot(Pdf_geneswitch_rep2, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+
+
+```{r}
+#normalize, find variable feature, and scale data
+Pdf_geneswitch_rep2 <- NormalizeData(Pdf_geneswitch_rep2)
+Pdf_geneswitch_rep2 <- FindVariableFeatures(Pdf_geneswitch_rep2, selection.method = "vst", nfeatures = 10000)
+top10 <- head(VariableFeatures(Pdf_geneswitch_rep2), 10)
+
+plot1 <- VariableFeaturePlot(Pdf_geneswitch_rep2)
+plot(plot1)
+
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot(plot2)
+
+all.genes <- rownames(Pdf_geneswitch_rep2)
+Pdf_geneswitch_rep2 <- ScaleData(Pdf_geneswitch_rep2, features = all.genes)
+```
+
+
+```{r}
+#dimensional reduction
+Pdf_geneswitch_rep2 <- RunPCA(Pdf_geneswitch_rep2, features = VariableFeatures(object = Pdf_geneswitch_rep2))
+VizDimLoadings(Pdf_geneswitch_rep2, dims = 1:2, reduction = "pca")
+DimPlot(Pdf_geneswitch_rep2, reduction = "pca")
+DimHeatmap(Pdf_geneswitch_rep2, dims = 1:6, cells = 500, balanced = TRUE)
+ElbowPlot(Pdf_geneswitch_rep2)
+```
+
+
+```{r}
+#cluster and UMAP
+Pdf_geneswitch_rep2 <- FindNeighbors(Pdf_geneswitch_rep2, dims = 1:10)
+Pdf_geneswitch_rep2 <- FindClusters(Pdf_geneswitch_rep2, resolution = 1.4)
+Pdf_geneswitch_rep2 <- RunUMAP(Pdf_geneswitch_rep2, dims = 1:10)
+DimPlot(Pdf_geneswitch_rep2, reduction = "umap", label = T)
+```
+
+
+```{r}
+#find cluster markers
+Pdf.rep2.markers <- FindAllMarkers(Pdf_geneswitch_rep2, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+Pdf.rep2.markers %>% group_by(cluster) %>% top_n(n = 20, wt = avg_logFC)
+```
+
+
+```{r}
+#select integration anchors
+
+int_features <- SelectIntegrationFeatures(object.list = c(Pdf_geneswitch_rep1, Pdf_geneswitch_rep2))
+Pdf.anchors <- FindIntegrationAnchors(object.list = c(Pdf_geneswitch_rep1, Pdf_geneswitch_rep2), anchor.features = int_features)
+
+Pdf.combined <- IntegrateData(anchorset = Pdf.anchors)
+
+
+#plot sequencing data qualitiy info
+VlnPlot(Pdf.combined, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, group.by = "orig.ident")
+
+plot1 <- FeatureScatter(Pdf.combined, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(Pdf.combined, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+CombinePlots(plots = list(plot1, plot2))
+```
+
+
+```{r}
+#subset
+Pdf.combined <- subset(Pdf.combined, subset = nFeature_RNA > 400 & nFeature_RNA < 2500 & percent.mt < 7)
+
+Pdf.combined <- FindVariableFeatures(Pdf.combined, selection.method = "mvp", nfeatures = 16000)
+
+plot1 <- VariableFeaturePlot(Pdf.combined)
+plot(plot1)
+
+#cleaned data
+VlnPlot(Pdf.combined, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+
+top20 <- head(VariableFeatures(Pdf.combined), 20)
+
+plot1 <- VariableFeaturePlot(Pdf.combined)
+plot(plot1)
+
+plot2 <- LabelPoints(plot = plot1, points = top20, repel = TRUE) + theme(axis.line = element_line(size = 0.5), axis.title = element_blank(), legend.position = "none", text = element_text(size = 12))
+plot(plot2)
+```
+
+
+```{r}
+#scale data and dimensional reduction
+Pdf.combined <- ScaleData(Pdf.combined, verbose = FALSE, features = all.genes)
+Pdf.combined <- RunPCA(Pdf.combined, npcs = 30, features = VariableFeatures(object = Pdf.combined))
+Pdf.combined <- RunUMAP(Pdf.combined, reduction = "pca", dims = 1:15)
+Pdf.combined <- FindNeighbors(Pdf.combined, reduction = "pca", dims = 1:15)
+Pdf.combined <- FindClusters(Pdf.combined, resolution = 1.0)
+ElbowPlot(Pdf.combined)
+
+#cleaned data post reclustering
+VlnPlot(Pdf.combined, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), group.by = "orig.ident", ncol = 3)
+
+VlnPlot(Pdf.combined, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, cols = my_cols)
+```
+
+
+```{r}
+#dimensional reduction plots
+my_cols <- hue_pal()(15)
+show_col(my_cols)
+my_cols
+my_cols <- c("#F8766D", "#DE8C00", "#619CFF", "#39B600", "#00BF7D", "#00BFC4", "#619CFF", "#9590FF", "#E6C122", "#619CFF")
+
+pdf_gs_int_umap <- DimPlot(Pdf.combined, reduction = "umap", group.by = "orig.ident") + theme(axis.line = element_line(size = 0.5), axis.title = element_blank(), legend.position = "none", text = element_text(size = 12))
+pdf_gs_int_umap
+
+pdf_gs_umap <- DimPlot(Pdf.combined, reduction = "umap", label = T)
+pdf_gs_umap <- pdf_gs_umap + theme(legend.position = "none", text = element_text(size = 12))
+pdf_gs_umap
+
+
+pdf_gs_umap_min <- pdf_gs_umap + theme_classic() +
+  theme(axis.line = element_line(size = 0.5), axis.title = element_blank(), legend.position = "none", text = element_text(size = 12)) + scale_color_manual(values = my_cols)
+pdf_gs_umap_min
+
+pdf_gs_umap_min
+
+Integration <- p1 + theme(legend.position = "none")
+Integration
+```
+
+
+```{r}
+#find markers
+Pdf.combined.markers <- FindAllMarkers(Pdf.combined, only.pos = F, min.pct = 0.25, logfc.threshold = 0.25)
+Pdf.combined.pos.markers <- Pdf.combined.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+Pdf.combined.neg.markers <- Pdf.combined.markers %>% group_by(cluster) %>% top_n(n = -10, wt = avg_logFC)
+```
+
+
+```{r}
+#vriSubset
+VriSub <- SubsetData(Pdf.combined, subset.name = 'vri', low.threshold = 0.25)
+VlnPlot(VriSub, features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "vri"), ncol = 4)
+VriSub <- ScaleData(VriSub, verbose = FALSE)
+VriSub <- RunPCA(VriSub, npcs = 10, verbose = FALSE)
+VriSub <- RunUMAP(VriSub, reduction = "pca", dims = 1:10)
+VriSub <- RunTSNE(VriSub, reduction = "pca", dims = 1:10)
+VriSub <- FindNeighbors(VriSub, reduction = "pca", dims = 1:10)
+VriSub <- FindClusters(VriSub, resolution = 1.0)
+VlnPlot(VriSub, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+vri_umap <- DimPlot(VriSub, reduction = "umap", label = TRUE, pt.size = 2, repel = FALSE) + theme_classic() +
+  theme(axis.line = element_line(size = 0.5), axis.title = element_blank(), legend.position = "none", text = element_text(size = 12)) + scale_color_manual(values = my_cols[2:4])
+vri_umap
+```
+
+
+```{r}
+#vri subset Markers
+Vri.markers <- FindAllMarkers(VriSub, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+Vri.markers %>% group_by(cluster) %>% top_n(n = 30, wt = avg_logFC)
+```
+
+```{r}
+```
+
+
